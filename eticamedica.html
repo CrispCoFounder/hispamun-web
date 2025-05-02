@@ -34,13 +34,17 @@
     }
     button {
       padding: 10px 15px;
-      margin: 5px;
+      margin: 5px 3px;
       border: none;
       border-radius: 6px;
       color: white;
-      background-color: #007bff;
       cursor: pointer;
     }
+    .btn-azul { background-color: #007bff; }
+    .btn-verde { background-color: #28a745; }
+    .btn-rojo { background-color: #dc3545; }
+    .btn-amarillo { background-color: #ffc107; color: black; }
+
     .delegados-grid {
       display: flex;
       flex-wrap: wrap;
@@ -74,13 +78,14 @@
   <div class="container">
     <input type="text" id="nombre" placeholder="Nombre del delegado">
     <input type="text" id="pais" placeholder="País (ej: Colombia)">
-    <button onclick="agregarDelegado()">Agregar Delegado</button>
-    <button onclick="mostrarLista()">Ver Lista</button>
+    <button class="btn-verde" onclick="agregarDelegado()">Agregar Delegado</button>
+    <button class="btn-azul" onclick="mostrarLista()">Ver Lista</button>
     <div class="delegados-grid" id="contenedorDelegados"></div>
   </div>
 
   <script>
     let delegados = JSON.parse(localStorage.getItem('delegados')) || [];
+    let intervalos = {};
 
     function guardarDelegados() {
       localStorage.setItem('delegados', JSON.stringify(delegados));
@@ -123,15 +128,18 @@
         card.innerHTML = `
           <strong><img class="bandera" src="${obtenerBandera(d.pais)}"> ${d.nombre} (${d.pais})</strong>
           <p>Intervenciones: ${d.intervenciones}</p>
-          <button onclick="intervencion(${d.id})">+ Intervención</button>
+          <button class="btn-azul" onclick="intervencion(${d.id})">+ Intervención</button>
           <select id="puntaje-${d.id}">
             <option value="">-- Puntuar --</option>
             <option value="1">1</option><option value="2">2</option>
             <option value="3">3</option><option value="4">4</option><option value="5">5</option>
           </select>
           <p>Promedio: ${promedio}</p>
-          <p>Amonestaciones: ${d.amonestaciones}</p>
-          <button onclick="amonestar(${d.id})">+ Amonestación</button>
+          <p>Tiempo: ${formatearTiempo(d.tiempo + (d._inicio ? Date.now() - d._inicio : 0))}</p>
+          <button class="${d._activo ? 'btn-rojo' : 'btn-verde'}" onclick="iniciarTiempo(${d.id})">${d._activo ? 'Detener' : 'Iniciar'}</button>
+          <button class="btn-azul" onclick="reiniciarTiempo(${d.id})">Reiniciar</button>
+          <p class="${d.amonestaciones > 0 ? 'btn-amarillo' : ''}">Amonestaciones: ${d.amonestaciones}</p>
+          <button class="btn-amarillo" onclick="amonestar(${d.id})">+ Amonestación</button>
         `;
         contenedor.appendChild(card);
       });
@@ -152,6 +160,48 @@
       d.amonestaciones++;
       guardarDelegados();
       renderDelegados();
+    }
+
+    function iniciarTiempo(id) {
+      const d = delegados.find(d => d.id === id);
+      if (!d) return;
+
+      if (intervalos[id]) {
+        clearInterval(intervalos[id]);
+        d.tiempo += Date.now() - d._inicio;
+        d._activo = false;
+        delete d._inicio;
+        delete intervalos[id];
+      } else {
+        d._inicio = Date.now();
+        d._activo = true;
+        intervalos[id] = setInterval(() => renderDelegados(), 1000);
+      }
+
+      guardarDelegados();
+      renderDelegados();
+    }
+
+    function reiniciarTiempo(id) {
+      const d = delegados.find(d => d.id === id);
+      if (!d) return;
+
+      if (intervalos[id]) {
+        clearInterval(intervalos[id]);
+        delete intervalos[id];
+      }
+
+      d.tiempo = 0;
+      d._activo = false;
+      delete d._inicio;
+      guardarDelegados();
+      renderDelegados();
+    }
+
+    function formatearTiempo(ms) {
+      const minutos = String(Math.floor(ms / 60000)).padStart(2, "0");
+      const segundos = String(Math.floor((ms % 60000) / 1000)).padStart(2, "0");
+      return `${minutos}:${segundos}`;
     }
 
     function mostrarLista() {

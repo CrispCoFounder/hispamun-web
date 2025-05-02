@@ -46,8 +46,11 @@
     <h1>HISPAMUN XIV</h1>
     <select id="rol">
       <option value="secretario">Secretario General</option>
-      <option value="presidente">Presidente</option>
-    </select>
+      <option value="presidente">Presidente (todos)</option>
+      <option value="presiEtica">Presi Etica Médica</option>
+      <option value="presiConsejo">Presi Consejo</option>
+      <option value="presiOMS">Presi OMS</option>
+    </select>    
     <input type="password" id="password" placeholder="Contraseña">
     <button onclick="login()">Entrar</button>
   </div>
@@ -56,10 +59,18 @@
     function login() {
       const rol = document.getElementById("rol").value;
       const password = document.getElementById("password").value;
-      if ((rol === "secretario" && password === "admin123") ||
-          (rol === "presidente" && password === "comite123")) {
+  
+      const rutas = {
+        "secretario": { pass: "admin123", redirect: "panel.html" },
+        "presidente": { pass: "comite123", redirect: "panel.html" },
+        "presiEtica": { pass: "etica123", redirect: "eticamedica.html" },
+        "presiConsejo": { pass: "consejo123", redirect: "consejo.html" },
+        "presiOMS": { pass: "oms123", redirect: "oms.html" }
+      };
+  
+      if (rutas[rol] && password === rutas[rol].pass) {
         localStorage.setItem("rol", rol);
-        window.location.href = "panel.html";
+        window.location.href = rutas[rol].redirect;
       } else {
         alert("Credenciales incorrectas");
       }
